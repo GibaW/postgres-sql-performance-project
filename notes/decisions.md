@@ -30,3 +30,7 @@ of data read from order_items during the aggregation.
 ### Expected Outcome
 - Reduced I/O on order_items
 - Lower execution time for aggregation queries involving recent orders
+
+Indexes didn’t improve runtime because the query still scanned a large portion of order_items.
+
+Introduced a pre-aggregated table (order_totals) to reduce join input cardinality and improve analytical performance.

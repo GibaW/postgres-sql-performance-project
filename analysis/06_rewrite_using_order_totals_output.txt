@@ -1,0 +1,53 @@
+QUERY PLAN                                                                                                                                                                                     |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+Limit  (cost=8499.73..8499.75 rows=10 width=52) (actual time=77.032..81.224 rows=10.00 loops=1)                                                                                                |
+  Buffers: shared hit=1303 read=2168                                                                                                                                                           |
+  ->  Sort  (cost=8499.73..8502.23 rows=1000 width=52) (actual time=77.031..81.222 rows=10.00 loops=1)                                                                                         |
+        Sort Key: (sum(ot.order_total)) DESC                                                                                                                                                   |
+        Sort Method: top-N heapsort  Memory: 26kB                                                                                                                                              |
+        Buffers: shared hit=1303 read=2168                                                                                                                                                     |
+        ->  Finalize GroupAggregate  (cost=8259.12..8478.12 rows=1000 width=52) (actual time=75.729..80.802 rows=1000.00 loops=1)                                                              |
+              Group Key: c.customer_id                                                                                                                                                         |
+              Buffers: shared hit=1303 read=2168                                                                                                                                               |
+              ->  Gather Merge  (cost=8259.12..8452.87 rows=1700 width=52) (actual time=75.721..80.138 rows=1999.00 loops=1)                                                                   |
+                    Workers Planned: 1                                                                                                                                                         |
+                    Workers Launched: 1                                                                                                                                                        |
+                    Buffers: shared hit=1303 read=2168                                                                                                                                         |
+                    ->  Sort  (cost=7259.11..7261.61 rows=1000 width=52) (actual time=42.854..42.904 rows=999.50 loops=2)                                                                      |
+                          Sort Key: c.customer_id                                                                                                                                              |
+                          Sort Method: quicksort  Memory: 126kB                                                                                                                                |
+                          Buffers: shared hit=1303 read=2168                                                                                                                                   |
+                          Worker 0:  Sort Method: quicksort  Memory: 126kB                                                                                                                     |
+                          ->  Partial HashAggregate  (cost=7196.78..7209.28 rows=1000 width=52) (actual time=42.405..42.659 rows=999.50 loops=2)                                               |
+                                Group Key: c.customer_id                                                                                                                                       |
+                                Batches: 1  Memory Usage: 625kB                                                                                                                                |
+                                Buffers: shared hit=1295 read=2168                                                                                                                             |
+                                Worker 0:  Batches: 1  Memory Usage: 625kB                                                                                                                     |
+                                ->  Hash Join  (cost=4206.60..7049.53 rows=29449 width=29) (actual time=12.325..37.070 rows=24958.00 loops=2)                                                  |
+                                      Hash Cond: (o.customer_id = c.customer_id)                                                                                                               |
+                                      Buffers: shared hit=1295 read=2168                                                                                                                       |
+                                      ->  Parallel Hash Join  (cost=4172.10..6937.41 rows=29449 width=17) (actual time=11.855..32.100 rows=24958.00 loops=2)                                   |
+                                            Hash Cond: (ot.order_id = o.order_id)                                                                                                              |
+                                            Buffers: shared hit=1281 read=2158                                                                                                                 |
+                                            ->  Parallel Seq Scan on order_totals ot  (cost=0.00..2456.47 rows=117647 width=17) (actual time=0.005..4.786 rows=100000.00 loops=2)              |
+                                                  Buffers: shared hit=1280                                                                                                                     |
+                                            ->  Parallel Hash  (cost=3803.99..3803.99 rows=29449 width=16) (actual time=11.670..11.671 rows=24958.00 loops=2)                                  |
+                                                  Buckets: 65536  Batches: 1  Memory Usage: 2880kB                                                                                             |
+                                                  Buffers: shared hit=1 read=2158                                                                                                              |
+                                                  ->  Parallel Bitmap Heap Scan on orders o  (cost=1254.00..3803.99 rows=29449 width=16) (actual time=5.363..15.221 rows=49916.00 loops=1)     |
+                                                        Recheck Cond: ((order_status = ANY ('{PAID,SHIPPED}'::text[])) AND (order_ts >= (now() - '90 days'::interval)))                        |
+                                                        Heap Blocks: exact=1961                                                                                                                |
+                                                        Buffers: shared hit=1 read=2158                                                                                                        |
+                                                        ->  Bitmap Index Scan on idx_orders_status_ts  (cost=0.00..1241.48 rows=50064 width=0) (actual time=4.998..4.999 rows=49916.00 loops=1)|
+                                                              Index Cond: ((order_status = ANY ('{PAID,SHIPPED}'::text[])) AND (order_ts >= (now() - '90 days'::interval)))                    |
+                                                              Index Searches: 2                                                                                                                |
+                                                              Buffers: shared hit=1 read=197                                                                                                   |
+                                      ->  Hash  (cost=22.00..22.00 rows=1000 width=20) (actual time=0.464..0.464 rows=1000.00 loops=2)                                                         |
+                                            Buckets: 1024  Batches: 1  Memory Usage: 60kB                                                                                                      |
+                                            Buffers: shared hit=14 read=10                                                                                                                     |
+                                            ->  Seq Scan on customers c  (cost=0.00..22.00 rows=1000 width=20) (actual time=0.082..0.340 rows=1000.00 loops=2)                                 |
+                                                  Buffers: shared hit=14 read=10                                                                                                               |
+Planning:                                                                                                                                                                                      |
+  Buffers: shared hit=9 read=18                                                                                                                                                                |
+Planning Time: 1.290 ms                                                                                                                                                                        |
+Execution Time: 81.381 ms                                                                                                                                                                      |
