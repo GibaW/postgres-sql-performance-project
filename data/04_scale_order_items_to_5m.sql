@@ -7,7 +7,7 @@ SELECT
   p.product_id,
   qty.quantity,
   p.unit_price,
-  (qty.quantity * p.unit_price)::numeric(14,2)
+  (qty.quantity * p.unit_price)::numeric(14,2) 
 FROM orders o
 CROSS JOIN LATERAL (
   SELECT product_id, unit_price
