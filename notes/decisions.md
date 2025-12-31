@@ -34,3 +34,13 @@ of data read from order_items during the aggregation.
 Indexes didn’t improve runtime because the query still scanned a large portion of order_items.
 
 Introduced a pre-aggregated table (order_totals) to reduce join input cardinality and improve analytical performance.
+
+### Results (Top customers query)
+- Baseline (direct join to order_items): ~489–522 ms
+- After indexes (orders bitmap scan): ~506 ms (no improvement overall)
+- Rewrite with pre-aggregation (order_totals): 81.381 ms (~6x faster)
+
+Key insight: reducing join input cardinality was more effective than indexing when the query still required scanning a large portion of order_items.
+
+
+
